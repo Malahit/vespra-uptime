@@ -30,6 +30,12 @@ jobs:
           curl -fsS --max-time 20 --retry 2 --retry-delay 5 \
             https://fly-zone.duckdns.org:10443/site/api/uptime
 
+      - name: Monitor ping
+        if: success()
+        run: |
+          curl -fsS --max-time 20 \
+            "https://fly-zone.duckdns.org:10443/site/api/monitor/ping?token=${{ secrets.MONITOR_TOKEN }}" >/dev/null
+
       - name: Alert Telegram
         if: failure()
         env:
