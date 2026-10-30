@@ -1,0 +1,33 @@
+name: uptime
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check Vespra
+        run: |
+          set -euo pipefail
+          echo "Site:"
+          curl -fsS --max-time 20 --retry 2 --retry-delay 5 \
+            https://fly-zone.duckdns.org:10443/site/ -o /dev/null
+          echo "Uptime API:"
+          curl -fsS --max-time 20 --retry 2 --retry-delay 5 \
+            https://fly-zone.duckdns.org:10443/site/api/uptime
+
+      - name: Alert Telegram
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          TEXT="🚨 Vespra недоступна: внешняя проверка не прошла (сайт или heartbeat бота/Alarmus). Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sS --max-time 20 -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$CHAT" --data-urlencode "text=$TEXT"
