@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      force_fail:
+        description: "Send a test alert"
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -13,8 +18,11 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Check Vespra
+        env:
+          FORCE_FAIL: ${{ inputs.force_fail }}
         run: |
           set -euo pipefail
+          if [ "$FORCE_FAIL" = "true" ]; then echo "forced failure (test)"; exit 1; fi
           echo "Site:"
           curl -fsS --max-time 20 --retry 2 --retry-delay 5 \
             https://fly-zone.duckdns.org:10443/site/ -o /dev/null
